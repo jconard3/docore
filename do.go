@@ -1,6 +1,5 @@
 package main
 
-//import "os"
 import "fmt"
 import "errors"
 
@@ -26,7 +25,7 @@ func DeleteDroplet(client godo.Client, id int) error {
 	return err
 }
 
-func RetrieveDroplet(client godo.Client, id int) (*godo.Droplet, error) {
+func GetDroplet(client godo.Client, id int) (*godo.Droplet, error) {
 	droplet, _, err := client.Droplets.Get(id)
 	return droplet, err
 }
@@ -46,7 +45,7 @@ func IDLookupDroplet(client godo.Client, name string) (int, error) {
 }
 
 func NameLookupDroplet(client godo.Client, id int) (string, error) {
-	droplet, err := RetrieveDroplet(client, id)
+	droplet, err := GetDroplet(client, id)
 	if err == nil {
 		return droplet.Name, nil
 	}
