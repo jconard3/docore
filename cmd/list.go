@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/digitalocean/godo"
 	"github.com/jconard3/docore/client"
 	"github.com/spf13/cobra"
 )
@@ -27,8 +28,8 @@ var listCmd = &cobra.Command{
 	Short: "List all dropets",
 	Long:  `List all droplets.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client, _ := CreateClient()
-		names := ListDroplets(client)
+		my_client, _ := client.CreateClient()
+		names := ListDroplets(my_client)
 		fmt.Println(names)
 	},
 }
