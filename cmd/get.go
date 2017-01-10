@@ -23,16 +23,15 @@ import (
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Get full details of a single droplet",
+	Long:  `The get subcommand retrieves all related information for a given droplet`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
-		fmt.Println("get called")
+		//if len(args) != 1 {
+		//	fmt.Println("get called without droplet name")
+		//} else {
+		//	fmt.Println("get called with droplet name", args[0])
+		//}
 	},
 }
 
@@ -48,5 +47,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	getCmd.Flags().StringP("name", "n", "", "name of droplet to describe")
+
+	getCmd.Flags().IntP("id", "i", 0, "id of droplet to describe")
 
 }
