@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/jconard3/do_coreos/cmd"
+import "github.com/jconard3/docore/cmd"
 
 func main() {
 	cmd.Execute()
