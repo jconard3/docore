@@ -17,22 +17,20 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/digitalocean/godo"
+	"github.com/jconard3/docore/client"
 	"github.com/spf13/cobra"
 )
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "List all dropets",
+	Long:  `List all droplets.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("list called")
+		my_client, _ := client.CreateClient()
+		names := ListDroplets(my_client)
+		fmt.Println(names)
 	},
 }
 
@@ -49,4 +47,17 @@ func init() {
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+}
+
+func ListDroplets(client godo.Client) []string {
+	opt := &godo.ListOptions{
+		Page:    1,
+		PerPage: 25,
+	}
+	var dropletNames []string
+	droplets, _, _ := client.Droplets.List(opt)
+	for _, element := range droplets {
+		dropletNames = append(dropletNames, element.Name)
+	}
+	return dropletNames
 }
