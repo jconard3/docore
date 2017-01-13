@@ -15,24 +15,42 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"os"
 
+	"github.com/digitalocean/godo"
+	"github.com/jconard3/docore/client"
 	"github.com/spf13/cobra"
 )
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
-	Use:   "get",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "get <droplet_name>",
+	Short: "Get full details of a single droplet",
+	Long:  `The get subcommand retrieves all related information for a given droplet described by the provided name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
-		fmt.Println("get called")
+		if len(args) < 1 {
+			fmt.Println("No droplet name provided in command arguments. Aborting")
+			os.Exit(-1)
+		}
+		droplet_name := args[0]
+
+		my_client, err := client.CreateClient()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("Error creating digitalocean client. Aborting.\n")
+			os.Exit(-1)
+		}
+
+		my_droplet, err := GetDroplet(my_client, droplet_name)
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("Error retriving droplet. Aborting")
+			os.Exit(-1)
+		}
+		fmt.Println(my_droplet)
 	},
 }
 
@@ -48,5 +66,37 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//getCmd.Flags().StringP("name", "n", "", "name of droplet to describe")
 
+	//getCmd.Flags().IntP("id", "i", 0, "id of droplet to describe")
+
+}
+
+func GetDroplet(client godo.Client, droplet_name string) (*godo.Droplet, error) {
+	//Check which flag was given, if neither name nor id, error out w/ usage
+	droplet_id, err := NameToID(client, droplet_name)
+	if err != nil {
+		return nil, err
+	}
+
+	droplet, _, err := client.Droplets.Get(droplet_id)
+	return droplet, err
+}
+
+func NameToID(client godo.Client, droplet_name string) (int, error) {
+	opt := &godo.ListOptions{
+		Page:    1,
+		PerPage: 25,
+	}
+	droplets, _, err := client.Droplets.List(opt)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, element := range droplets {
+		if element.Name == droplet_name {
+			return element.ID, nil
+		}
+	}
+	return 0, errors.New("No droplet matches for given name")
 }
