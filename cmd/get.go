@@ -15,12 +15,12 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
 	"github.com/digitalocean/godo"
 	"github.com/jconard3/docore/client"
+	"github.com/jconard3/docore/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -74,29 +74,11 @@ func init() {
 
 func GetDroplet(client godo.Client, droplet_name string) (*godo.Droplet, error) {
 	//Check which flag was given, if neither name nor id, error out w/ usage
-	droplet_id, err := NameToID(client, droplet_name)
+	droplet_id, err := utils.NameToID(client, droplet_name)
 	if err != nil {
 		return nil, err
 	}
 
 	droplet, _, err := client.Droplets.Get(droplet_id)
 	return droplet, err
-}
-
-func NameToID(client godo.Client, droplet_name string) (int, error) {
-	opt := &godo.ListOptions{
-		Page:    1,
-		PerPage: 25,
-	}
-	droplets, _, err := client.Droplets.List(opt)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, element := range droplets {
-		if element.Name == droplet_name {
-			return element.ID, nil
-		}
-	}
-	return 0, errors.New("No droplet matches for given name")
 }
