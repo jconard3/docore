@@ -1,10 +1,11 @@
-package main
+package client
 
 import "os"
 import "fmt"
 
 import "golang.org/x/oauth2"
 import "github.com/digitalocean/godo"
+import "github.com/spf13/viper"
 
 type TokenSource struct {
 	AccessToken string
@@ -18,11 +19,11 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 }
 
 func CreateClient() (godo.Client, error) {
-	pat := os.Getenv("TOKEN")
-	if pat == "" {
-		fmt.Println("Environment variable 'TOKEN' not initialized.\nRun the following in your shell to initialize environment variables\nexport TOKEN=$(cat coreos_do_token)\n")
+	if !viper.IsSet("do_token") {
+		fmt.Println("Could not read value \"do_token\" from config file.")
 		os.Exit(1)
 	}
+	pat := viper.GetString("do_token")
 
 	tokenSource := &TokenSource{
 		AccessToken: pat,
