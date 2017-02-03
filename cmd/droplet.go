@@ -16,33 +16,174 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/digitalocean/godo"
+	"github.com/jconard3/docore/client"
+	"github.com/jconard3/docore/utils"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-// dropletCmd represents the droplet command
+func init() {
+	RootCmd.AddCommand(dropletCmd)
+	dropletCmd.AddCommand(listCmd)
+	dropletCmd.AddCommand(createCmd)
+	dropletCmd.AddCommand(deleteCmd)
+	dropletCmd.AddCommand(getCmd)
+}
+
 var dropletCmd = &cobra.Command{
 	Use:   "droplet",
 	Short: "Interface for DigitalOcean Droplets",
 	Long: `Droplet subcommand provides droplet-level interface with the
 	provided DigitalOcean account.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("droplet called")
+		cmd.Help()
 	},
 }
 
-func init() {
-	RootCmd.AddCommand(dropletCmd)
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all droplets",
+	Run: func(cmd *cobra.Command, args []string) {
+		my_client, _ := client.CreateClient()
+		names := ListDroplets(my_client)
+		fmt.Println(names)
+	},
+}
 
-	// Here you will define your flags and configuration settings.
+var createCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a droplet",
+	Run: func(cmd *cobra.Command, args []string) {
+		if !viper.IsSet("ssh_keys") {
+			fmt.Println("No ssh_keys specified in config file. Aborting without creating droplet.")
+			os.Exit(-1)
+		}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// dropletCmd.PersistentFlags().String("foo", "", "A help for foo")
+		if cmd.Flag("name").Value.String() == "" {
+			fmt.Println("No name specified for creating droplet. Aborting without creating droplet.")
+			os.Exit(-1)
+		}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// dropletCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+		c, _ := client.CreateClient()
+		CreateDroplet(c, cmd)
+	},
+}
 
+var deleteCmd = &cobra.Command{
+	Use:   "delete <droplet_name>",
+	Short: "Delete a droplet",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			fmt.Println("No name specified for deleting droplet. Aborting without deleting droplet.")
+			cmd.Help()
+			os.Exit(-1)
+		}
+
+		c, _ := client.CreateClient()
+		id, err := utils.NameToID(c, cmd.Flag("name").Value.String())
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("Failed to look up droplet ID with given name.")
+			os.Exit(-1)
+		}
+
+		prompt := fmt.Sprintf("Are you sure you want to delete droplet %s, ID: %d ?", cmd.Flag("name").Value.String(), id)
+		confirmed, err := utils.AskForConfirmation(prompt)
+		if confirmed {
+			if err := DeleteDroplet(c, id); err != nil {
+				fmt.Println(err)
+				fmt.Println("Failed to delete droplet.")
+				os.Exit(-1)
+			}
+		}
+	},
+}
+
+var getCmd = &cobra.Command{
+	Use:   "get <droplet_name>",
+	Short: "Get full details of a droplet",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			fmt.Println("No name specified. Aborting")
+			cmd.Help()
+			os.Exit(-1)
+		}
+
+		c, err := client.CreateClient()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("Error creating DO client. Aborting")
+			os.Exit(-1)
+		}
+
+		droplet, err := GetDroplet(c, args[0])
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("error retrieving droplet. Aborting")
+			os.Exit(-1)
+		}
+		fmt.Println(droplet)
+	},
+}
+
+func ListDroplets(client godo.Client) []string {
+	opt := &godo.ListOptions{
+		Page:    1,
+		PerPage: 25,
+	}
+	var dropletNames []string
+	droplets, _, _ := client.Droplets.List(opt)
+	for _, element := range droplets {
+		dropletNames = append(dropletNames, element.Name)
+	}
+	return dropletNames
+}
+
+func CreateDroplet(client godo.Client, cmd *cobra.Command) {
+	ssh_keys := viper.GetStringSlice("ssh_keys")
+	droplet_keys := make([]godo.DropletCreateSSHKey, len(ssh_keys))
+	for i, ssh_key := range ssh_keys {
+		droplet_keys[i].Fingerprint = ssh_key
+	}
+
+	createRequest := &godo.DropletCreateRequest{
+		Name:   cmd.Flag("name").Value.String(),
+		Region: cmd.Flag("region").Value.String(),
+		Size:   cmd.Flag("size").Value.String(),
+		Image: godo.DropletCreateImage{
+			Slug: cmd.Flag("image").Value.String(),
+		},
+		SSHKeys: droplet_keys,
+	}
+
+	fmt.Println(createRequest)
+	c, _ := utils.AskForConfirmation("Are you sure you want to create this droplet")
+	if !c {
+		os.Exit(-1)
+	}
+
+	droplet, _, err := client.Droplets.Create(createRequest)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	fmt.Println("Droplet ", droplet.Name, " created. Currently provisioning...")
+}
+
+func DeleteDroplet(client godo.Client, id int) error {
+	_, err := client.Droplets.Delete(id)
+	return err
+}
+
+func GetDroplet(client godo.Client, name string) (*godo.Droplet, error) {
+	id, err := utils.NameToID(client, name)
+	if err != nil {
+		return nil, err
+	}
+
+	droplet, _, err := client.Droplets.Get(id)
+	return droplet, err
 }
