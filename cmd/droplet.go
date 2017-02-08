@@ -36,7 +36,10 @@ func init() {
 	dropletcreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of droplet to be created")
 
 	dropletCmd.AddCommand(dropletdeleteCmd)
+	dropletdeleteCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
+
 	dropletCmd.AddCommand(dropletgetCmd)
+	dropletgetCmd.Flags().StringP("name", "n", "", "Name of droplet to get retrieved. Required - no default")
 }
 
 var dropletCmd = &cobra.Command{
@@ -63,6 +66,11 @@ var dropletcreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
+		if cmd.Flag("name").Value.String() == "" {
+			fmt.Println("No name specified for creating droplet. Aborting without creating droplet.")
+			os.Exit(-1)
+		}
+
 		c, _ := client.CreateClient()
 		CreateDroplet(c, cmd)
 	},
@@ -72,13 +80,12 @@ var dropletdeleteCmd = &cobra.Command{
 	Use:   "delete <droplet_name>",
 	Short: "Delete a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println("No name specified for deleting droplet. Aborting without deleting droplet.")
-			cmd.Help()
+		c, _ := client.CreateClient()
+
+		if cmd.Flag("name").Value.String() == "" {
+			fmt.Println("No name specified for deleting droplet. Aborting without creating droplet.")
 			os.Exit(-1)
 		}
-
-		c, _ := client.CreateClient()
 		id, err := utils.NameToID(c, cmd.Flag("name").Value.String())
 		if err != nil {
 			fmt.Println(err)
@@ -102,9 +109,8 @@ var dropletgetCmd = &cobra.Command{
 	Use:   "get <droplet_name>",
 	Short: "Get full details of a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println("No name specified. Aborting")
-			cmd.Help()
+		if cmd.Flag("name").Value.String() == "" {
+			fmt.Println("No name specified for retrieving droplet. Aborting.")
 			os.Exit(-1)
 		}
 
@@ -115,7 +121,7 @@ var dropletgetCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		droplet, err := GetDroplet(c, args[0])
+		droplet, err := GetDroplet(c, cmd.Flag("name").Value.String())
 		if err != nil {
 			fmt.Println(err)
 			fmt.Println("error retrieving droplet. Aborting")
@@ -147,11 +153,6 @@ func CreateDroplet(client godo.Client, cmd *cobra.Command) {
 	droplet_keys := make([]godo.DropletCreateSSHKey, len(ssh_keys))
 	for i, ssh_key := range ssh_keys {
 		droplet_keys[i].Fingerprint = ssh_key
-	}
-
-	if cmd.Flag("name").Value.String() == "" {
-		fmt.Println("No name specified for creating droplet. Aborting without creating droplet.")
-		os.Exit(-1)
 	}
 
 	createRequest := &godo.DropletCreateRequest{
