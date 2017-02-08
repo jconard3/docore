@@ -27,10 +27,16 @@ import (
 
 func init() {
 	RootCmd.AddCommand(dropletCmd)
-	dropletCmd.AddCommand(listCmd)
-	dropletCmd.AddCommand(createCmd)
-	dropletCmd.AddCommand(deleteCmd)
-	dropletCmd.AddCommand(getCmd)
+	dropletCmd.AddCommand(dropletlistCmd)
+
+	dropletCmd.AddCommand(dropletcreateCmd)
+	dropletcreateCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
+	dropletcreateCmd.Flags().StringP("region", "r", "nyc1", "Region of droplet to be created")
+	dropletcreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of droplet to be created")
+	dropletcreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of droplet to be created")
+
+	dropletCmd.AddCommand(dropletdeleteCmd)
+	dropletCmd.AddCommand(dropletgetCmd)
 }
 
 var dropletCmd = &cobra.Command{
@@ -43,36 +49,26 @@ var dropletCmd = &cobra.Command{
 	},
 }
 
-var listCmd = &cobra.Command{
+var dropletlistCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all droplets",
 	Run: func(cmd *cobra.Command, args []string) {
-		my_client, _ := client.CreateClient()
-		names := ListDroplets(my_client)
+		c, _ := client.CreateClient()
+		names := ListDroplets(c)
 		fmt.Println(names)
 	},
 }
 
-var createCmd = &cobra.Command{
+var dropletcreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
-		if !viper.IsSet("ssh_keys") {
-			fmt.Println("No ssh_keys specified in config file. Aborting without creating droplet.")
-			os.Exit(-1)
-		}
-
-		if cmd.Flag("name").Value.String() == "" {
-			fmt.Println("No name specified for creating droplet. Aborting without creating droplet.")
-			os.Exit(-1)
-		}
-
 		c, _ := client.CreateClient()
 		CreateDroplet(c, cmd)
 	},
 }
 
-var deleteCmd = &cobra.Command{
+var dropletdeleteCmd = &cobra.Command{
 	Use:   "delete <droplet_name>",
 	Short: "Delete a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -102,7 +98,7 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
-var getCmd = &cobra.Command{
+var dropletgetCmd = &cobra.Command{
 	Use:   "get <droplet_name>",
 	Short: "Get full details of a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -143,10 +139,19 @@ func ListDroplets(client godo.Client) []string {
 }
 
 func CreateDroplet(client godo.Client, cmd *cobra.Command) {
+	if !viper.IsSet("ssh_keys") {
+		fmt.Println("No ssh_keys specified in config file. Aborting without creating droplet.")
+		os.Exit(-1)
+	}
 	ssh_keys := viper.GetStringSlice("ssh_keys")
 	droplet_keys := make([]godo.DropletCreateSSHKey, len(ssh_keys))
 	for i, ssh_key := range ssh_keys {
 		droplet_keys[i].Fingerprint = ssh_key
+	}
+
+	if cmd.Flag("name").Value.String() == "" {
+		fmt.Println("No name specified for creating droplet. Aborting without creating droplet.")
+		os.Exit(-1)
 	}
 
 	createRequest := &godo.DropletCreateRequest{
