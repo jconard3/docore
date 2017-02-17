@@ -56,8 +56,10 @@ var dropletlistCmd = &cobra.Command{
 	Short: "List all droplets",
 	Run: func(cmd *cobra.Command, args []string) {
 		c, _ := client.CreateClient()
-		names := ListDroplets(c)
-		fmt.Println(names)
+		droplets := ListDroplets(c)
+		for _, drop := range droplets {
+			fmt.Println(drop.Name)
+		}
 	},
 }
 
@@ -130,17 +132,13 @@ var dropletgetCmd = &cobra.Command{
 	},
 }
 
-func ListDroplets(client godo.Client) []string {
+func ListDroplets(client godo.Client) []godo.Droplet {
 	opt := &godo.ListOptions{
 		Page:    1,
 		PerPage: 25,
 	}
-	var dropletNames []string
 	droplets, _, _ := client.Droplets.List(opt)
-	for _, element := range droplets {
-		dropletNames = append(dropletNames, element.Name)
-	}
-	return dropletNames
+	return droplets
 }
 
 func CreateDroplet(client godo.Client, cmd *cobra.Command) {
