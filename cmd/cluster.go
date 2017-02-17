@@ -15,31 +15,90 @@
 package cmd
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+
+	"github.com/digitalocean/godo"
+	"github.com/jconard3/docore/client"
+	"github.com/jconard3/docore/utils"
 	"github.com/spf13/cobra"
 )
 
-// clusterCmd represents the cluster command
+var numDroplets int
+
+func init() {
+	RootCmd.AddCommand(clusterCmd)
+
+	clusterCmd.AddCommand(clustercreateCmd)
+	clustercreateCmd.Flags().StringP("cloudconfig", "c", os.Getenv("HOME")+"/.cloud_config", "Directory location of cloud-config")
+	clustercreateCmd.Flags().IntVarP(&numDroplets, "droplets", "d", 3, "Number of droplets to provision for new cluster")
+	clustercreateCmd.Flags().StringP("name", "n", "", "Name of new cluster. Required - no default")
+	clustercreateCmd.Flags().StringP("region", "r", "nyc1", "Region of new cluster")
+	clustercreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of each droplet in new cluster")
+	clustercreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of each droplet in new cluster")
+}
+
 var clusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Interface for DigitalOcean CoreOS Clusters",
 	Long:  `Cluster subcommand provides a cluster-level abstraction of a DigitalOcean CoreOS deployment.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
 		cmd.Help()
 	},
 }
 
-func init() {
-	RootCmd.AddCommand(clusterCmd)
+var clustercreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a new CoreOS Cluster.",
+	Long: `Create a new CoreOS Cluster
+	Discovery url must be provided in the config file under the key 'discovery_url'.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if cmd.Flag("name").Value.String() == "" {
+			fmt.Println("No name specified for new cluster. Aborting.")
+			os.Exit(-1)
+		}
 
-	// Here you will define your flags and configuration settings.
+		c, _ := client.CreateClient()
+		CreateCluster(c, cmd)
+	},
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// clusterCmd.PersistentFlags().String("foo", "", "A help for foo")
+func CreateCluster(client godo.Client, cmd *cobra.Command) {
+	dropletNames := make([]string, numDroplets)
+	for i := 0; i < numDroplets; i++ {
+		dropletNames[i] = fmt.Sprint(cmd.Flag("name").Value.String(), "-", i)
+	}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// clusterCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	buf, err := ioutil.ReadFile(cmd.Flag("cloudconfig").Value.String())
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	cloud_config := string(buf)
 
+	droplet_keys, err := utils.ViperGetSSHKeys()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+
+	createRequest := &godo.DropletMultiCreateRequest{
+		Names:  dropletNames,
+		Region: cmd.Flag("region").Value.String(),
+		Size:   cmd.Flag("size").Value.String(),
+		Image: godo.DropletCreateImage{
+			Slug: cmd.Flag("image").Value.String(),
+		},
+		SSHKeys:           droplet_keys,
+		UserData:          cloud_config,
+		PrivateNetworking: true,
+	}
+
+	droplet, _, err := client.Droplets.CreateMultiple(createRequest)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	fmt.Println(droplet)
 }
