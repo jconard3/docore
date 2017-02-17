@@ -22,7 +22,6 @@ import (
 	"github.com/jconard3/docore/client"
 	"github.com/jconard3/docore/utils"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 func init() {
@@ -145,14 +144,10 @@ func ListDroplets(client godo.Client) []string {
 }
 
 func CreateDroplet(client godo.Client, cmd *cobra.Command) {
-	if !viper.IsSet("ssh_keys") {
-		fmt.Println("No ssh_keys specified in config file. Aborting without creating droplet.")
+	droplet_keys, err := utils.ViperGetSSHKeys()
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(-1)
-	}
-	ssh_keys := viper.GetStringSlice("ssh_keys")
-	droplet_keys := make([]godo.DropletCreateSSHKey, len(ssh_keys))
-	for i, ssh_key := range ssh_keys {
-		droplet_keys[i].Fingerprint = ssh_key
 	}
 
 	createRequest := &godo.DropletCreateRequest{

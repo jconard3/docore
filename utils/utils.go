@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/digitalocean/godo"
+	"github.com/spf13/viper"
 )
 
 func NameToID(client godo.Client, droplet_name string) (int, error) {
@@ -33,7 +34,7 @@ func AskForConfirmation(s string) (bool, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Printf("%s [y/n]: ", s)
+		fmt.Printf("%s [y/N]: ", s)
 		response, err := reader.ReadString('\n')
 		if err != nil {
 			return false, err
@@ -46,4 +47,17 @@ func AskForConfirmation(s string) (bool, error) {
 			return false, nil
 		}
 	}
+}
+
+func ViperGetSSHKeys() ([]godo.DropletCreateSSHKey, error) {
+	if !viper.IsSet("ssh_keys") {
+		return nil, errors.New("No SSH Keys array specified in config file under 'ssh_keys'")
+	}
+
+	ssh_keys := viper.GetStringSlice("ssh_keys")
+	droplet_keys := make([]godo.DropletCreateSSHKey, len(ssh_keys))
+	for i, ssh_key := range ssh_keys {
+		droplet_keys[i].Fingerprint = ssh_key
+	}
+	return droplet_keys, nil
 }
