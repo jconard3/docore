@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/digitalocean/godo"
 	"github.com/jconard3/docore/client"
@@ -26,6 +27,7 @@ import (
 )
 
 var numDroplets int
+var noPrompt, dryRun bool
 
 func init() {
 	RootCmd.AddCommand(clusterCmd)
@@ -33,10 +35,14 @@ func init() {
 	clusterCmd.AddCommand(clustercreateCmd)
 	clustercreateCmd.Flags().StringP("cloudconfig", "c", os.Getenv("HOME")+"/.cloud_config", "Directory location of cloud-config")
 	clustercreateCmd.Flags().IntVarP(&numDroplets, "droplets", "d", 3, "Number of droplets to provision for new cluster")
-	clustercreateCmd.Flags().StringP("name", "n", "", "Name of new cluster. Required - no default")
+	//clustercreateCmd.Flags().StringP("name", "n", "", "Name of new cluster. Required - no default")
 	clustercreateCmd.Flags().StringP("region", "r", "nyc1", "Region of new cluster")
 	clustercreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of each droplet in new cluster")
 	clustercreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of each droplet in new cluster")
+
+	clusterCmd.AddCommand(clusterdeleteCmd)
+	clusterdeleteCmd.Flags().BoolVar(&noPrompt, "no-prompt", false, "Confirm culster deletion without individual droplet prompt.")
+	clusterdeleteCmd.Flags().BoolVar(&dryRun, "dry-run", false, "List cluster machines without commiting them for deletion.")
 }
 
 var clusterCmd = &cobra.Command{
@@ -49,25 +55,76 @@ var clusterCmd = &cobra.Command{
 }
 
 var clustercreateCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create [name]",
 	Short: "Create a new CoreOS Cluster.",
 	Long: `Create a new CoreOS Cluster
 	Discovery url must be provided in the config file under the key 'discovery_url'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if cmd.Flag("name").Value.String() == "" {
-			fmt.Println("No name specified for new cluster. Aborting.")
+		//if cmd.Flag("name").Value.String() == "" {
+		//	fmt.Println("No name specified for new cluster. Aborting.")
+		//	os.Exit(-1)
+		//}
+		if len(args) < 1 {
+			fmt.Println("ERROR: Name of cluster to be create not given in command arguments. Exiting.")
+			cmd.Help()
 			os.Exit(-1)
 		}
+		clusterName := args[0]
 
 		c, _ := client.CreateClient()
-		CreateCluster(c, cmd)
+		CreateCluster(c, cmd, clusterName)
 	},
 }
 
-func CreateCluster(client godo.Client, cmd *cobra.Command) {
+var clusterdeleteCmd = &cobra.Command{
+	Use:   "delete [name]",
+	Short: "Delete a CoreOS Cluster.",
+	Long: `Delete a CoreOS Cluster.
+	User will be prompted for each deletion unless '-y/--yes' flag is given.
+	Use '--dry-run' to list cluster machines without commiting them for deletion.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			fmt.Println("ERROR: Name of cluster to be deleted not given in command arguments. Exiting.")
+			cmd.Help()
+			os.Exit(-1)
+		}
+		clusterName := args[0]
+
+		c, _ := client.CreateClient()
+		DeleteCluster(c, clusterName)
+		//droplets := ListDroplets(c)
+
+		//for _, drop := range droplets {
+		//	if strings.HasPrefix(drop.Name, clusterName) {
+		//		if dryRun {
+		//			fmt.Println("Dry Run - Command would have deleted droplet:", drop.Name)
+		//		} else if noPrompt {
+		//			err := DeleteDroplet(c, drop.ID)
+		//			if err != nil {
+		//				fmt.Println(err)
+		//			}
+		//		} else {
+		//			confirm, err := utils.AskForConfirmation("Would you like to delete droplet " + drop.Name)
+		//			if err != nil {
+		//				fmt.Println(err)
+		//			}
+		//			if confirm {
+		//				err := DeleteDroplet(c, drop.ID)
+		//				if err != nil {
+		//					fmt.Println(err)
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
+
+	},
+}
+
+func CreateCluster(client godo.Client, cmd *cobra.Command, clusterName string) {
 	dropletNames := make([]string, numDroplets)
 	for i := 0; i < numDroplets; i++ {
-		dropletNames[i] = fmt.Sprint(cmd.Flag("name").Value.String(), "-", i)
+		dropletNames[i] = fmt.Sprint(clusterName, "-", i)
 	}
 
 	buf, err := ioutil.ReadFile(cmd.Flag("cloudconfig").Value.String())
@@ -101,4 +158,31 @@ func CreateCluster(client godo.Client, cmd *cobra.Command) {
 		os.Exit(-1)
 	}
 	fmt.Println(droplet)
+}
+
+func DeleteCluster(client godo.Client, clusterName string) {
+	droplets := ListDroplets(client)
+	for _, drop := range droplets {
+		if strings.HasPrefix(drop.Name, clusterName) {
+			if dryRun {
+				fmt.Println("Dry Run - Command would have deleted droplet:", drop.Name)
+			} else if noPrompt {
+				err := DeleteDroplet(client, drop.ID)
+				if err != nil {
+					fmt.Println(err)
+				}
+			} else {
+				confirm, err := utils.AskForConfirmation("Would you like to delete droplet " + drop.Name)
+				if err != nil {
+					fmt.Println(err)
+				}
+				if confirm {
+					err := DeleteDroplet(client, drop.ID)
+					if err != nil {
+						fmt.Println(err)
+					}
+				}
+			}
+		}
+	}
 }
