@@ -16,7 +16,7 @@ func NameToID(client godo.Client, droplet_name string) (int, error) {
 		Page:    1,
 		PerPage: 25,
 	}
-	droplets, _, err := client.Droplets.List(opt)
+	droplets, _, err := client.Droplets.List(ctx, opt)
 	if err != nil {
 		return 0, err
 	}

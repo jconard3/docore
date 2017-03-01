@@ -14,7 +14,12 @@
 
 package main
 
-import "github.com/jconard3/docore/cmd"
+import (
+	"context"
+	"github.com/jconard3/docore/cmd"
+)
+
+var ctx = context.Background()
 
 func main() {
 	cmd.Execute()

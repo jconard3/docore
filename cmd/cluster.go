@@ -152,7 +152,7 @@ func CreateCluster(client godo.Client, cmd *cobra.Command, clusterName string) {
 		PrivateNetworking: true,
 	}
 
-	droplet, _, err := client.Droplets.CreateMultiple(createRequest)
+	droplet, _, err := client.Droplets.CreateMultiple(ctx, createRequest)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

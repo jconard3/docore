@@ -137,7 +137,7 @@ func ListDroplets(client godo.Client) []godo.Droplet {
 		Page:    1,
 		PerPage: 25,
 	}
-	droplets, _, _ := client.Droplets.List(opt)
+	droplets, _, _ := client.Droplets.List(ctx, opt)
 	return droplets
 }
 
@@ -164,7 +164,7 @@ func CreateDroplet(client godo.Client, cmd *cobra.Command) {
 		os.Exit(-1)
 	}
 
-	droplet, _, err := client.Droplets.Create(createRequest)
+	droplet, _, err := client.Droplets.Create(ctx, createRequest)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -173,7 +173,7 @@ func CreateDroplet(client godo.Client, cmd *cobra.Command) {
 }
 
 func DeleteDroplet(client godo.Client, id int) error {
-	_, err := client.Droplets.Delete(id)
+	_, err := client.Droplets.Delete(ctx, id)
 	return err
 }
 
@@ -183,6 +183,6 @@ func GetDroplet(client godo.Client, name string) (*godo.Droplet, error) {
 		return nil, err
 	}
 
-	droplet, _, err := client.Droplets.Get(id)
+	droplet, _, err := client.Droplets.Get(ctx, id)
 	return droplet, err
 }
