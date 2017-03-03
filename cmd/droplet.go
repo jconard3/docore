@@ -18,10 +18,9 @@ import (
 	"fmt"
 	"os"
 
-	"../client"
-	"../utils"
-
 	"github.com/digitalocean/godo"
+	"github.com/jconard3/docore/client"
+	"github.com/jconard3/docore/utils"
 	"github.com/spf13/cobra"
 )
 
