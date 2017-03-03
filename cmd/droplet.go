@@ -26,19 +26,19 @@ import (
 
 func init() {
 	RootCmd.AddCommand(dropletCmd)
-	dropletCmd.AddCommand(dropletlistCmd)
+	dropletCmd.AddCommand(dropletListCmd)
 
-	dropletCmd.AddCommand(dropletcreateCmd)
-	dropletcreateCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
-	dropletcreateCmd.Flags().StringP("region", "r", "nyc1", "Region of droplet to be created")
-	dropletcreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of droplet to be created")
-	dropletcreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of droplet to be created")
+	dropletCmd.AddCommand(dropletCreateCmd)
+	dropletCreateCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
+	dropletCreateCmd.Flags().StringP("region", "r", "nyc1", "Region of droplet to be created")
+	dropletCreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of droplet to be created")
+	dropletCreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of droplet to be created")
 
-	dropletCmd.AddCommand(dropletdeleteCmd)
-	dropletdeleteCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
+	dropletCmd.AddCommand(dropletDeleteCmd)
+	dropletDeleteCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
 
-	dropletCmd.AddCommand(dropletgetCmd)
-	dropletgetCmd.Flags().StringP("name", "n", "", "Name of droplet to get retrieved. Required - no default")
+	dropletCmd.AddCommand(dropletGetCmd)
+	dropletGetCmd.Flags().StringP("name", "n", "", "Name of droplet to get retrieved. Required - no default")
 }
 
 var dropletCmd = &cobra.Command{
@@ -51,7 +51,7 @@ var dropletCmd = &cobra.Command{
 	},
 }
 
-var dropletlistCmd = &cobra.Command{
+var dropletListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all droplets",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -63,7 +63,7 @@ var dropletlistCmd = &cobra.Command{
 	},
 }
 
-var dropletcreateCmd = &cobra.Command{
+var dropletCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -77,7 +77,7 @@ var dropletcreateCmd = &cobra.Command{
 	},
 }
 
-var dropletdeleteCmd = &cobra.Command{
+var dropletDeleteCmd = &cobra.Command{
 	Use:   "delete <droplet_name>",
 	Short: "Delete a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -106,7 +106,7 @@ var dropletdeleteCmd = &cobra.Command{
 	},
 }
 
-var dropletgetCmd = &cobra.Command{
+var dropletGetCmd = &cobra.Command{
 	Use:   "get <droplet_name>",
 	Short: "Get full details of a droplet",
 	Run: func(cmd *cobra.Command, args []string) {

@@ -32,17 +32,17 @@ var noPrompt, dryRun bool
 func init() {
 	RootCmd.AddCommand(clusterCmd)
 
-	clusterCmd.AddCommand(clustercreateCmd)
-	clustercreateCmd.Flags().StringP("cloudconfig", "c", os.Getenv("HOME")+"/.cloud_config", "Directory location of cloud-config")
-	clustercreateCmd.Flags().IntVarP(&numDroplets, "droplets", "d", 3, "Number of droplets to provision for new cluster")
-	//clustercreateCmd.Flags().StringP("name", "n", "", "Name of new cluster. Required - no default")
-	clustercreateCmd.Flags().StringP("region", "r", "nyc1", "Region of new cluster")
-	clustercreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of each droplet in new cluster")
-	clustercreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of each droplet in new cluster")
+	clusterCmd.AddCommand(clusterCreateCmd)
+	clusterCreateCmd.Flags().StringP("cloudconfig", "c", os.Getenv("HOME")+"/.cloud_config", "Directory location of cloud-config")
+	clusterCreateCmd.Flags().IntVarP(&numDroplets, "droplets", "d", 3, "Number of droplets to provision for new cluster")
+	//clusterCreateCmd.Flags().StringP("name", "n", "", "Name of new cluster. Required - no default")
+	clusterCreateCmd.Flags().StringP("region", "r", "nyc1", "Region of new cluster")
+	clusterCreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of each droplet in new cluster")
+	clusterCreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of each droplet in new cluster")
 
-	clusterCmd.AddCommand(clusterdeleteCmd)
-	clusterdeleteCmd.Flags().BoolVar(&noPrompt, "no-prompt", false, "Confirm culster deletion without individual droplet prompt.")
-	clusterdeleteCmd.Flags().BoolVar(&dryRun, "dry-run", false, "List cluster machines without commiting them for deletion.")
+	clusterCmd.AddCommand(clusterDeleteCmd)
+	clusterDeleteCmd.Flags().BoolVar(&noPrompt, "no-prompt", false, "Confirm culster deletion without individual droplet prompt.")
+	clusterDeleteCmd.Flags().BoolVar(&dryRun, "dry-run", false, "List cluster machines without commiting them for deletion.")
 }
 
 var clusterCmd = &cobra.Command{
@@ -54,7 +54,7 @@ var clusterCmd = &cobra.Command{
 	},
 }
 
-var clustercreateCmd = &cobra.Command{
+var clusterCreateCmd = &cobra.Command{
 	Use:   "create [name]",
 	Short: "Create a new CoreOS Cluster.",
 	Long: `Create a new CoreOS Cluster
@@ -76,7 +76,7 @@ var clustercreateCmd = &cobra.Command{
 	},
 }
 
-var clusterdeleteCmd = &cobra.Command{
+var clusterDeleteCmd = &cobra.Command{
 	Use:   "delete [name]",
 	Short: "Delete a CoreOS Cluster.",
 	Long: `Delete a CoreOS Cluster.
