@@ -15,8 +15,8 @@
 package main
 
 import (
+	"./cmd"
 	"context"
-	"github.com/jconard3/docore/cmd"
 )
 
 var ctx = context.Background()
