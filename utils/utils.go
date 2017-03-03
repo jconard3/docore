@@ -8,15 +8,16 @@ import (
 	"strings"
 
 	"github.com/digitalocean/godo"
+	"github.com/jconard3/docore/client"
 	"github.com/spf13/viper"
 )
 
-func NameToID(client godo.Client, droplet_name string) (int, error) {
+func NameToID(c godo.Client, droplet_name string) (int, error) {
 	opt := &godo.ListOptions{
 		Page:    1,
 		PerPage: 25,
 	}
-	droplets, _, err := client.Droplets.List(ctx, opt)
+	droplets, _, err := c.Droplets.List(client.Ctx, opt)
 	if err != nil {
 		return 0, err
 	}
