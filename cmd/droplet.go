@@ -132,16 +132,16 @@ var dropletGetCmd = &cobra.Command{
 	},
 }
 
-func ListDroplets(client godo.Client) []godo.Droplet {
+func ListDroplets(c godo.Client) []godo.Droplet {
 	opt := &godo.ListOptions{
 		Page:    1,
 		PerPage: 25,
 	}
-	droplets, _, _ := client.Droplets.List(ctx, opt)
+	droplets, _, _ := c.Droplets.List(client.Ctx, opt)
 	return droplets
 }
 
-func CreateDroplet(client godo.Client, cmd *cobra.Command) {
+func CreateDroplet(c godo.Client, cmd *cobra.Command) {
 	droplet_keys, err := utils.ViperGetSSHKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -159,12 +159,12 @@ func CreateDroplet(client godo.Client, cmd *cobra.Command) {
 	}
 
 	fmt.Println(createRequest)
-	c, _ := utils.AskForConfirmation("Are you sure you want to create this droplet")
-	if !c {
+	confirmed, _ := utils.AskForConfirmation("Are you sure you want to create this droplet")
+	if !confirmed {
 		os.Exit(-1)
 	}
 
-	droplet, _, err := client.Droplets.Create(ctx, createRequest)
+	droplet, _, err := c.Droplets.Create(client.Ctx, createRequest)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -172,17 +172,17 @@ func CreateDroplet(client godo.Client, cmd *cobra.Command) {
 	fmt.Println("Droplet ", droplet.Name, " created. Currently provisioning...")
 }
 
-func DeleteDroplet(client godo.Client, id int) error {
-	_, err := client.Droplets.Delete(ctx, id)
+func DeleteDroplet(c godo.Client, id int) error {
+	_, err := c.Droplets.Delete(client.Ctx, id)
 	return err
 }
 
-func GetDroplet(client godo.Client, name string) (*godo.Droplet, error) {
-	id, err := utils.NameToID(client, name)
+func GetDroplet(c godo.Client, name string) (*godo.Droplet, error) {
+	id, err := utils.NameToID(c, name)
 	if err != nil {
 		return nil, err
 	}
 
-	droplet, _, err := client.Droplets.Get(ctx, id)
+	droplet, _, err := c.Droplets.Get(client.Ctx, id)
 	return droplet, err
 }

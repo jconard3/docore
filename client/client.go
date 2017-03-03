@@ -1,12 +1,15 @@
 package client
 
 import (
+	"context"
 	"errors"
 
 	"github.com/digitalocean/godo"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
+
+var Ctx = context.Background()
 
 type TokenSource struct {
 	AccessToken string

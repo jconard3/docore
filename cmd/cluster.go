@@ -121,7 +121,7 @@ var clusterDeleteCmd = &cobra.Command{
 	},
 }
 
-func CreateCluster(client godo.Client, cmd *cobra.Command, clusterName string) {
+func CreateCluster(c godo.Client, cmd *cobra.Command, clusterName string) {
 	dropletNames := make([]string, numDroplets)
 	for i := 0; i < numDroplets; i++ {
 		dropletNames[i] = fmt.Sprint(clusterName, "-", i)
@@ -152,7 +152,7 @@ func CreateCluster(client godo.Client, cmd *cobra.Command, clusterName string) {
 		PrivateNetworking: true,
 	}
 
-	droplet, _, err := client.Droplets.CreateMultiple(ctx, createRequest)
+	droplet, _, err := c.Droplets.CreateMultiple(client.Ctx, createRequest)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -160,14 +160,14 @@ func CreateCluster(client godo.Client, cmd *cobra.Command, clusterName string) {
 	fmt.Println(droplet)
 }
 
-func DeleteCluster(client godo.Client, clusterName string) {
-	droplets := ListDroplets(client)
+func DeleteCluster(c godo.Client, clusterName string) {
+	droplets := ListDroplets(c)
 	for _, drop := range droplets {
 		if strings.HasPrefix(drop.Name, clusterName) {
 			if dryRun {
 				fmt.Println("Dry Run - Command would have deleted droplet:", drop.Name)
 			} else if noPrompt {
-				err := DeleteDroplet(client, drop.ID)
+				err := DeleteDroplet(c, drop.ID)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -177,7 +177,7 @@ func DeleteCluster(client godo.Client, clusterName string) {
 					fmt.Println(err)
 				}
 				if confirm {
-					err := DeleteDroplet(client, drop.ID)
+					err := DeleteDroplet(c, drop.ID)
 					if err != nil {
 						fmt.Println(err)
 					}
