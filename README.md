@@ -1,6 +1,8 @@
 # docore
 Golang interface to CoreOS cluster hosted on Digital Ocean
 
+[![CircleCI](https://circleci.com/gh/jconard3/docore/tree/master.svg?style=svg)](https://circleci.com/gh/jconard3/docore/tree/master)
+
 ## Config
 Place config file at $HOME/.docore.yaml
 NOTE: ssh_keys array will currently only accpet fingerprints of ssh keys. If you place a full public key in the array, it will fail to create a droplet
