@@ -1,11 +1,12 @@
 package client
 
-import "os"
-import "fmt"
+import (
+	"errors"
 
-import "golang.org/x/oauth2"
-import "github.com/digitalocean/godo"
-import "github.com/spf13/viper"
+	"github.com/digitalocean/godo"
+	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
+)
 
 type TokenSource struct {
 	AccessToken string
@@ -20,8 +21,8 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 
 func CreateClient() (godo.Client, error) {
 	if !viper.IsSet("do_token") {
-		fmt.Println("Could not read value \"do_token\" from config file.")
-		os.Exit(1)
+		err := errors.New("Could not read value \"do_token\" from config file.")
+		return godo.Client{}, err
 	}
 	pat := viper.GetString("do_token")
 
