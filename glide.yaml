@@ -1,0 +1,7 @@
+package: github.com/jconard3/docore
+import:
+- package: github.com/digitalocean/godo
+  version: ^1.0.0
+- package: github.com/spf13/cobra
+- package: github.com/spf13/viper
+- package: golang.org/x/oauth2
