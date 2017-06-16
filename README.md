@@ -1,7 +1,15 @@
 # docore
-Golang interface to CoreOS cluster hosted on Digital Ocean
+Command line interface written in go to create/delete/manage CoreOS clusters hosted in DigitalOcean
 
 [![CircleCI](https://circleci.com/gh/jconard3/docore/tree/master.svg?style=svg)](https://circleci.com/gh/jconard3/docore/tree/master)
+
+## Getting Started
+Go get the utility
+`go get github.com/jconard3/docore`
+Generate a config
+>>TODO
+Create your first CoreOS cluster
+`docore cluster create my-cluster`
 
 ## Config
 Place config file at $HOME/.docore.yaml
