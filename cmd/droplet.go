@@ -29,7 +29,6 @@ func init() {
 	dropletCmd.AddCommand(dropletListCmd)
 
 	dropletCmd.AddCommand(dropletCreateCmd)
-	dropletCreateCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
 	dropletCreateCmd.Flags().StringP("region", "r", "nyc1", "Region of droplet to be created")
 	dropletCreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of droplet to be created")
 	dropletCreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of droplet to be created")
@@ -38,7 +37,6 @@ func init() {
 	dropletDeleteCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
 
 	dropletCmd.AddCommand(dropletGetCmd)
-	dropletGetCmd.Flags().StringP("name", "n", "", "Name of droplet to get retrieved. Required - no default")
 }
 
 var dropletCmd = &cobra.Command{
