@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/digitalocean/godo"
 	"github.com/jconard3/docore/client"
@@ -34,9 +35,9 @@ func init() {
 	dropletCreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of droplet to be created")
 
 	dropletCmd.AddCommand(dropletDeleteCmd)
-	dropletDeleteCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
 
-	dropletCmd.AddCommand(dropletGetCmd)
+	dropletCmd.AddCommand(dropletInfoCmd)
+	dropletInfoCmd.Flags().BoolP("verbose", "v", false, "Display full droplet details")
 }
 
 var dropletCmd = &cobra.Command{
@@ -122,9 +123,9 @@ var dropletDeleteCmd = &cobra.Command{
 	},
 }
 
-var dropletGetCmd = &cobra.Command{
-	Use:   "get <droplet_name>",
-	Short: "Get full details of a droplet",
+var dropletInfoCmd = &cobra.Command{
+	Use:   "info <droplet_name>",
+	Short: "Get details of a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println("No name specified for retrieving droplet. Aborting.")
@@ -144,7 +145,14 @@ var dropletGetCmd = &cobra.Command{
 			fmt.Println("error retrieving droplet. Aborting")
 			os.Exit(-1)
 		}
-		fmt.Println(droplet)
+
+		if strings.Compare("true", cmd.Flag("verbose").Value.String()) == 0 {
+			fmt.Println(droplet)
+		} else {
+			fmt.Println("Name: \t", droplet.Name)
+			fmt.Println("IP: \t", droplet.Networks.V4[0].IPAddress)
+			fmt.Println("OS: \t", droplet.Image.Slug)
+		}
 	},
 }
 
