@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/digitalocean/godo"
 	"github.com/jconard3/docore/client"
@@ -29,16 +30,14 @@ func init() {
 	dropletCmd.AddCommand(dropletListCmd)
 
 	dropletCmd.AddCommand(dropletCreateCmd)
-	dropletCreateCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
 	dropletCreateCmd.Flags().StringP("region", "r", "nyc1", "Region of droplet to be created")
 	dropletCreateCmd.Flags().StringP("size", "s", "512mb", "RAM size of droplet to be created")
 	dropletCreateCmd.Flags().StringP("image", "i", "coreos-stable", "Image of droplet to be created")
 
 	dropletCmd.AddCommand(dropletDeleteCmd)
-	dropletDeleteCmd.Flags().StringP("name", "n", "", "Name of droplet to be created. Required - no default")
 
-	dropletCmd.AddCommand(dropletGetCmd)
-	dropletGetCmd.Flags().StringP("name", "n", "", "Name of droplet to get retrieved. Required - no default")
+	dropletCmd.AddCommand(dropletInfoCmd)
+	dropletInfoCmd.Flags().BoolP("verbose", "v", false, "Display full droplet details")
 }
 
 var dropletCmd = &cobra.Command{
@@ -55,7 +54,13 @@ var dropletListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all droplets",
 	Run: func(cmd *cobra.Command, args []string) {
-		c, _ := client.CreateClient()
+		c, err := client.CreateClient()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("Error creating DO client. Aborting")
+			os.Exit(-1)
+		}
+
 		droplets := ListDroplets(c)
 		for _, drop := range droplets {
 			fmt.Println(drop.Name)
@@ -64,53 +69,69 @@ var dropletListCmd = &cobra.Command{
 }
 
 var dropletCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a droplet",
+	Use:   "create [droplet1 droplet2...]",
+	Short: "Create one or more droplets",
 	Run: func(cmd *cobra.Command, args []string) {
-		if cmd.Flag("name").Value.String() == "" {
-			fmt.Println("No name specified for creating droplet. Aborting without creating droplet.")
+		if len(args) < 1 {
+			fmt.Println("No name specified for creating droplet. Aborting.")
 			os.Exit(-1)
 		}
 
-		c, _ := client.CreateClient()
-		CreateDroplet(c, cmd)
+		c, err := client.CreateClient()
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("Error creating DO client. Aborting")
+			os.Exit(-1)
+		}
+
+		for _, n := range args {
+			CreateDroplet(c, cmd, n)
+		}
 	},
 }
 
 var dropletDeleteCmd = &cobra.Command{
-	Use:   "delete <droplet_name>",
+	Use:   "delete [droplet1 droplet2...]",
 	Short: "Delete a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
-		c, _ := client.CreateClient()
-
-		if cmd.Flag("name").Value.String() == "" {
-			fmt.Println("No name specified for deleting droplet. Aborting without creating droplet.")
+		if len(args) < 1 {
+			fmt.Println("No name specified for deleting droplet. Aborting.")
 			os.Exit(-1)
 		}
-		id, err := utils.NameToID(c, cmd.Flag("name").Value.String())
+
+		c, err := client.CreateClient()
 		if err != nil {
 			fmt.Println(err)
-			fmt.Println("Failed to look up droplet ID with given name.")
+			fmt.Println("Error creating DO client. Aborting")
 			os.Exit(-1)
 		}
 
-		prompt := fmt.Sprintf("Are you sure you want to delete droplet %s, ID: %d ?", cmd.Flag("name").Value.String(), id)
-		confirmed, err := utils.AskForConfirmation(prompt)
-		if confirmed {
-			if err := DeleteDroplet(c, id); err != nil {
+		for _, n := range args {
+			id, err := utils.NameToID(c, n)
+			if err != nil {
 				fmt.Println(err)
-				fmt.Println("Failed to delete droplet.")
-				os.Exit(-1)
+				fmt.Sprintf("Failed to look up droplet ID for %s", n)
+				continue
+			}
+
+			prompt := fmt.Sprintf("Are you sure you want to delete droplet %s, ID: %d ?", n, id)
+			confirmed, err := utils.AskForConfirmation(prompt)
+			if confirmed {
+				if err := DeleteDroplet(c, id); err != nil {
+					fmt.Println(err)
+					fmt.Sprintf("Failed to delete droplet %s.", n)
+					continue
+				}
 			}
 		}
 	},
 }
 
-var dropletGetCmd = &cobra.Command{
-	Use:   "get <droplet_name>",
-	Short: "Get full details of a droplet",
+var dropletInfoCmd = &cobra.Command{
+	Use:   "info [droplet1 droplet2...]",
+	Short: "Get details of one or more droplets",
 	Run: func(cmd *cobra.Command, args []string) {
-		if cmd.Flag("name").Value.String() == "" {
+		if len(args) < 1 {
 			fmt.Println("No name specified for retrieving droplet. Aborting.")
 			os.Exit(-1)
 		}
@@ -122,13 +143,22 @@ var dropletGetCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		droplet, err := GetDroplet(c, cmd.Flag("name").Value.String())
-		if err != nil {
-			fmt.Println(err)
-			fmt.Println("error retrieving droplet. Aborting")
-			os.Exit(-1)
+		for _, n := range args {
+			droplet, err := GetDroplet(c, n)
+			if err != nil {
+				fmt.Println(err)
+				fmt.Sprintf("error retrieving droplet %s.", n)
+				continue
+			}
+
+			if strings.Compare("true", cmd.Flag("verbose").Value.String()) == 0 {
+				fmt.Println(droplet)
+			} else {
+				fmt.Sprintf("Name: \t", droplet.Name)
+				fmt.Sprintf("IP: \t", droplet.Networks.V4[0].IPAddress)
+				fmt.Sprintf("OS: \t", droplet.Image.Slug)
+			}
 		}
-		fmt.Println(droplet)
 	},
 }
 
@@ -141,7 +171,7 @@ func ListDroplets(c godo.Client) []godo.Droplet {
 	return droplets
 }
 
-func CreateDroplet(c godo.Client, cmd *cobra.Command) {
+func CreateDroplet(c godo.Client, cmd *cobra.Command, name string) {
 	droplet_keys, err := utils.ViperGetSSHKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -149,7 +179,7 @@ func CreateDroplet(c godo.Client, cmd *cobra.Command) {
 	}
 
 	createRequest := &godo.DropletCreateRequest{
-		Name:   cmd.Flag("name").Value.String(),
+		Name:   name,
 		Region: cmd.Flag("region").Value.String(),
 		Size:   cmd.Flag("size").Value.String(),
 		Image: godo.DropletCreateImage{
