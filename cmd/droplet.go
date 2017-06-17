@@ -124,8 +124,8 @@ var dropletDeleteCmd = &cobra.Command{
 }
 
 var dropletInfoCmd = &cobra.Command{
-	Use:   "info <droplet_name>",
-	Short: "Get details of a droplet",
+	Use:   "info [droplet1 droplet2...]",
+	Short: "Get details of one or more droplets",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println("No name specified for retrieving droplet. Aborting.")
@@ -139,19 +139,21 @@ var dropletInfoCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		droplet, err := GetDroplet(c, args[0])
-		if err != nil {
-			fmt.Println(err)
-			fmt.Println("error retrieving droplet. Aborting")
-			os.Exit(-1)
-		}
+		for _, n := range args {
+			droplet, err := GetDroplet(c, n)
+			if err != nil {
+				fmt.Println(err)
+				fmt.Println("error retrieving droplet %s. Aborting", n)
+				os.Exit(-1)
+			}
 
-		if strings.Compare("true", cmd.Flag("verbose").Value.String()) == 0 {
-			fmt.Println(droplet)
-		} else {
-			fmt.Println("Name: \t", droplet.Name)
-			fmt.Println("IP: \t", droplet.Networks.V4[0].IPAddress)
-			fmt.Println("OS: \t", droplet.Image.Slug)
+			if strings.Compare("true", cmd.Flag("verbose").Value.String()) == 0 {
+				fmt.Println(droplet)
+			} else {
+				fmt.Println("Name: \t", droplet.Name)
+				fmt.Println("IP: \t", droplet.Networks.V4[0].IPAddress)
+				fmt.Println("OS: \t", droplet.Image.Slug)
+			}
 		}
 	},
 }
