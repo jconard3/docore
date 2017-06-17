@@ -69,8 +69,8 @@ var dropletListCmd = &cobra.Command{
 }
 
 var dropletCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a droplet",
+	Use:   "create [droplet1 droplet2...]",
+	Short: "Create one or more droplets",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			fmt.Println("No name specified for creating droplet. Aborting.")
@@ -84,7 +84,9 @@ var dropletCreateCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		CreateDroplet(c, cmd, args[0])
+		for _, n := range args {
+			CreateDroplet(c, cmd, n)
+		}
 	},
 }
 
