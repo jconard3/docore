@@ -23,30 +23,21 @@ import (
 // configCmd represents the config command
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "configuration interface",
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("config called")
+		cmd.Help()
+	},
+}
+
+var configGenerateCmd = &cobra.Command{
+	Use:   "generate",
+	Short: "generate a new config",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("generate subcommand called")
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(configCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// configCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// configCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
+	configCmd.AddCommand(configGenerateCmd)
 }
