@@ -89,9 +89,14 @@ var dropletCreateCmd = &cobra.Command{
 }
 
 var dropletDeleteCmd = &cobra.Command{
-	Use:   "delete <droplet_name>",
+	Use:   "delete [droplet1 droplet2...]",
 	Short: "Delete a droplet",
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			fmt.Println("No name specified for deleting droplet. Aborting.")
+			os.Exit(-1)
+		}
+
 		c, err := client.CreateClient()
 		if err != nil {
 			fmt.Println(err)
@@ -99,25 +104,22 @@ var dropletDeleteCmd = &cobra.Command{
 			os.Exit(-1)
 		}
 
-		if len(args) < 1 {
-			fmt.Println("No name specified for deleting droplet. Aborting.")
-			os.Exit(-1)
-		}
-
-		id, err := utils.NameToID(c, args[0])
-		if err != nil {
-			fmt.Println(err)
-			fmt.Println("Failed to look up droplet ID with given name.")
-			os.Exit(-1)
-		}
-
-		prompt := fmt.Sprintf("Are you sure you want to delete droplet %s, ID: %d ?", cmd.Flag("name").Value.String(), id)
-		confirmed, err := utils.AskForConfirmation(prompt)
-		if confirmed {
-			if err := DeleteDroplet(c, id); err != nil {
+		for _, n := range args {
+			id, err := utils.NameToID(c, n)
+			if err != nil {
 				fmt.Println(err)
-				fmt.Println("Failed to delete droplet.")
-				os.Exit(-1)
+				fmt.Sprintf("Failed to look up droplet ID for %s", n)
+				continue
+			}
+
+			prompt := fmt.Sprintf("Are you sure you want to delete droplet %s, ID: %d ?", n, id)
+			confirmed, err := utils.AskForConfirmation(prompt)
+			if confirmed {
+				if err := DeleteDroplet(c, id); err != nil {
+					fmt.Println(err)
+					fmt.Sprintf("Failed to delete droplet %s.", n)
+					continue
+				}
 			}
 		}
 	},
@@ -143,16 +145,16 @@ var dropletInfoCmd = &cobra.Command{
 			droplet, err := GetDroplet(c, n)
 			if err != nil {
 				fmt.Println(err)
-				fmt.Println("error retrieving droplet %s. Aborting", n)
-				os.Exit(-1)
+				fmt.Sprintf("error retrieving droplet %s.", n)
+				continue
 			}
 
 			if strings.Compare("true", cmd.Flag("verbose").Value.String()) == 0 {
 				fmt.Println(droplet)
 			} else {
-				fmt.Println("Name: \t", droplet.Name)
-				fmt.Println("IP: \t", droplet.Networks.V4[0].IPAddress)
-				fmt.Println("OS: \t", droplet.Image.Slug)
+				fmt.Sprintf("Name: \t", droplet.Name)
+				fmt.Sprintf("IP: \t", droplet.Networks.V4[0].IPAddress)
+				fmt.Sprintf("OS: \t", droplet.Image.Slug)
 			}
 		}
 	},
